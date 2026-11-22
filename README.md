@@ -1,14 +1,23 @@
 # LEVEL UP — Evolução Pessoal
 
-React / Express / tRPC / Drizzle starter, adapted from the Sandbox web-db-user template.
+Personal evolution platform focused on fitness, studies, nutrition and discipline through gamification.
+
+## Stack
+
+React, TypeScript, Express, tRPC, Drizzle and MySQL-compatible managed database.
+
+## Commands
 
 - `pnpm dev`: development server; honors `PORT` (default 3000).
 - `pnpm build` / `pnpm start`: build and serve `dist/index.js` and `dist/public/`.
-- `pnpm db:migrate`: apply checked-in migrations. `pnpm db:push`: generate and apply new schema changes.
-- `pnpm check` / `pnpm test`: types and application tests.
+- `pnpm db:migrate`: apply checked-in migrations.
+- `pnpm db:push`: generate and apply schema changes.
+- `pnpm check`: run TypeScript validation.
 
-Start with the Webdev skill's default-template guide. Platform login, storage, payments and service contracts live in its shared references; read the relevant capability before extending its helper.
+## Product
 
-`server/_core/publicConfig.ts` exposes only named public runtime values. Private keys stay server-side. The platform serves managed `/manus-storage/` assets; the application does not register a second proxy.
+LEVEL UP turns daily missions, training, cardio, nutrition, study and discipline into a personal progression system with XP, levels, streaks and rewards. The app uses Manus OAuth for authentication, persists the core gamification engine per user, and provides server-side LEVEL AI guidance.
 
-Platform configuration is readable and editable through `webdev.config`. Default settings are initial values, not enforced constraints. The agent may modify the files, commands and configuration or follow the flexible guide for another stack.
+The application also includes separate routes for missions, workouts, cardio, nutrition, studies, evolution, rewards and profile. Local activity records are namespaced by the authenticated user in the browser while core XP, missions and streak data use the managed database.
+
+Private credentials stay server-side. The platform serves managed `/manus-storage/` assets; the application does not register a second proxy.
