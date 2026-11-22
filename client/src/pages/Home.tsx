@@ -31,6 +31,7 @@ import {
 import { startLogin } from "@/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
 
 type Category = "Físico" | "Intelectual" | "Alimentação" | "Disciplina";
 type Mission = { id: number; title: string; detail: string; category: Category; xp: number; icon: typeof Dumbbell; completed: boolean };
@@ -51,6 +52,7 @@ const navItems = [
   { label: "Estudos", icon: BookOpen },
   { label: "Evolução", icon: BarChart3 },
 ];
+const sectionPaths: Record<string, string> = { "Visão geral": "/", "Missões": "/missoes", "Treinos": "/treinos", Cardio: "/cardio", "Alimentação": "/alimentacao", Estudos: "/estudos", "Evolução": "/evolucao" };
 
 const categoryClass: Record<Category, string> = {
   Físico: "lime",
@@ -69,6 +71,7 @@ function Donut({ value }: { value: number }) {
 
 export default function Home() {
   const { user, loading, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const progressQuery = trpc.progress.dashboard.useQuery(undefined, { enabled: isAuthenticated, retry: false });
   const ensureToday = trpc.progress.ensureToday.useMutation({ onSuccess: () => utils.progress.dashboard.invalidate() });
@@ -110,8 +113,8 @@ export default function Home() {
         <div className="brand"><div className="brand-mark"><Zap size={18} fill="currentColor" /></div><span>LEVEL <b>UP</b></span></div>
         <div className="profile-mini"><div className="avatar">{(user?.name ?? "LU").slice(0, 2).toUpperCase()}</div><div><strong>{user?.name ?? "Explorador"}</strong><span>Nível {Math.max(1, Math.floor(Math.sqrt(xp / 100)))} · Explorador</span></div><MoreHorizontal size={17} /></div>
         <p className="eyebrow nav-eyebrow">Workspace</p>
-        <nav>{navItems.map(({ label, icon: Icon }) => <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => { setActive(label); setShowMenu(false); }}><Icon size={18} /><span>{label}</span>{label === "Missões" && <em>{missions.filter((m) => !m.completed).length}</em>}</button>)}</nav>
-        <div className="sidebar-bottom"><button className="nav-item"><Trophy size={18} /><span>Recompensas</span></button><button className="nav-item"><UserRound size={18} /><span>Perfil</span></button><div className="ai-mini"><div className="ai-orb"><Sparkles size={16} /></div><div><strong>LEVEL AI</strong><span>Seu copiloto pessoal</span></div><ArrowUpRight size={16} /></div></div>
+        <nav>{navItems.map(({ label, icon: Icon }) => <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => { setActive(label); setShowMenu(false); setLocation(sectionPaths[label]); }}><Icon size={18} /><span>{label}</span>{label === "Missões" && <em>{missions.filter((m) => !m.completed).length}</em>}</button>)}</nav>
+        <div className="sidebar-bottom"><button className="nav-item" onClick={() => setLocation("/recompensas")}><Trophy size={18} /><span>Recompensas</span></button><button className="nav-item" onClick={() => setLocation("/perfil")}><UserRound size={18} /><span>Perfil</span></button><div className="ai-mini"><div className="ai-orb"><Sparkles size={16} /></div><div><strong>LEVEL AI</strong><span>Seu copiloto pessoal</span></div><ArrowUpRight size={16} /></div></div>
       </aside>
 
       <main className="main-content">
@@ -131,7 +134,7 @@ export default function Home() {
             <aside className="side-column"><div className="side-heading"><p className="eyebrow">CONQUISTAS</p><button className="text-button">Ver todas</button></div><div className="achievements card"><div className="achievement"><span className="medal gold"><Award size={19} /></span><div><strong>Primeira semana</strong><small>7 dias de consistência</small></div><Check size={16} className="achievement-check" /></div><div className="achievement"><span className="medal blue"><ShieldCheck size={19} /></span><div><strong>Foco total</strong><small>5 sessões de estudo</small></div><Check size={16} className="achievement-check" /></div><div className="achievement locked"><span className="medal gray"><Trophy size={19} /></span><div><strong>Modo imparável</strong><small>30 dias de consistência</small></div><span className="lock-label">12 dias</span></div></div><div className="ai-card"><div className="ai-card-top"><div className="ai-orb"><Sparkles size={17} /></div><span>LEVEL AI <em>DEMO</em></span></div><h3>Uma pequena melhoria para hoje</h3><p>Você tem mantido um bom ritmo nos estudos. Que tal registrar seu treino antes do almoço?</p><button onClick={() => setToast("LEVEL AI será conectado em breve")}>Conversar com LEVEL AI <ArrowUpRight size={15} /></button><small className="demo-note">Demonstração — recomendações reais ainda não estão conectadas.</small></div><div className="reward-card"><div><p className="eyebrow">PRÓXIMA RECOMPENSA</p><h3>Kit de organização</h3><span>1.000 XP <ArrowUpRight size={14} /></span></div><div className="reward-icon"><Trophy size={25} /></div></div></aside></section>
         </div>
       </main>
-      <nav className="bottom-nav">{navItems.slice(0, 5).map(({ label, icon: Icon }) => <button key={label} className={active === label ? "active" : ""} onClick={() => setActive(label)}><Icon size={19} /><span>{label === "Visão geral" ? "Início" : label}</span></button>)}</nav>
+      <nav className="bottom-nav">{navItems.slice(0, 5).map(({ label, icon: Icon }) => <button key={label} className={active === label ? "active" : ""} onClick={() => { setActive(label); setLocation(sectionPaths[label]); }}><Icon size={19} /><span>{label === "Visão geral" ? "Início" : label}</span></button>)}</nav>
       {toast && <div className="toast"><Check size={16} /> {toast}</div>}
     </div>
   );

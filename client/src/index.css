@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "./section-pages.css";
 @custom-variant dark (&:is(.dark *));
 
 :root { --bg:#0a0c0b; --surface:#111412; --surface-2:#171b18; --surface-3:#1d221e; --line:#283029; --text:#f3f7f0; --muted:#89948a; --lime:#c7f36b; --orange:#ffae63; --violet:#b99cff; --blue:#85b9ff; --radius:16px; }

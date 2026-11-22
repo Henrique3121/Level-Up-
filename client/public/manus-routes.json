@@ -1,1 +1,1 @@
-{"routes":[{"path":"/","title":"LEVEL UP — Evolução Pessoal"},{"path":"/404","title":"Página não encontrada"}]}
+{"routes":[{"path":"/","title":"LEVEL UP — Evolução Pessoal"},{"path":"/missoes","title":"Missões"},{"path":"/treinos","title":"Treinos"},{"path":"/cardio","title":"Cardio"},{"path":"/alimentacao","title":"Alimentação"},{"path":"/estudos","title":"Estudos"},{"path":"/evolucao","title":"Evolução"},{"path":"/recompensas","title":"Recompensas"},{"path":"/perfil","title":"Perfil"},{"path":"/404","title":"Página não encontrada"}]}
