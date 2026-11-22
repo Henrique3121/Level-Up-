@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   Apple,
@@ -28,6 +28,9 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { startLogin } from "@/const";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 
 type Category = "Físico" | "Intelectual" | "Alimentação" | "Disciplina";
 type Mission = { id: number; title: string; detail: string; category: Category; xp: number; icon: typeof Dumbbell; completed: boolean };
@@ -65,37 +68,57 @@ function Donut({ value }: { value: number }) {
 }
 
 export default function Home() {
+  const { user, loading, isAuthenticated } = useAuth();
+  const utils = trpc.useUtils();
+  const progressQuery = trpc.progress.dashboard.useQuery(undefined, { enabled: isAuthenticated, retry: false });
+  const ensureToday = trpc.progress.ensureToday.useMutation({ onSuccess: () => utils.progress.dashboard.invalidate() });
+  const completeMission = trpc.missions.complete.useMutation({ onSuccess: () => utils.progress.dashboard.invalidate() });
   const [active, setActive] = useState("Visão geral");
   const [missions, setMissions] = useState(initialMissions);
   const [showMenu, setShowMenu] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const completed = missions.filter((mission) => mission.completed).length;
   const earnedXp = useMemo(() => missions.filter((mission) => mission.completed).reduce((total, mission) => total + mission.xp, 0), [missions]);
-  const xp = 1240 + earnedXp - 60;
+  const xp = progressQuery.data?.profile.xpTotal ?? 0;
   const xpProgress = Math.round((xp / 1500) * 100);
 
+  useEffect(() => {
+    if (isAuthenticated && !ensureToday.isPending && !progressQuery.data) ensureToday.mutate();
+  }, [isAuthenticated, progressQuery.data, ensureToday.isPending]);
+
+  useEffect(() => {
+    const remote = progressQuery.data?.missions;
+    if (!remote?.length) return;
+    const iconByCategory = { physical: Dumbbell, intellectual: Brain, nutrition: Utensils, discipline: Leaf } as const;
+    const labelByCategory = { physical: "Físico", intellectual: "Intelectual", nutrition: "Alimentação", discipline: "Disciplina" } as const;
+    setMissions(remote.map((mission) => ({ id: mission.id, title: mission.title, detail: mission.hint ?? "Missão diária", category: labelByCategory[mission.category], xp: mission.xp, icon: iconByCategory[mission.category], completed: mission.status === "approved" })));
+  }, [progressQuery.data]);
+
   function toggleMission(id: number) {
-    setMissions((current) => current.map((mission) => mission.id === id ? { ...mission, completed: !mission.completed } : mission));
     const mission = missions.find((item) => item.id === id);
-    if (mission) setToast(mission.completed ? "Missão reaberta" : `+${mission.xp} XP conquistados`);
+    if (!mission || mission.completed) return;
+    completeMission.mutate({ missionId: id }, { onSuccess: () => setToast(`+${mission.xp} XP conquistados`), onError: (error) => setToast(error.message) });
     window.setTimeout(() => setToast(null), 2200);
   }
+
+  if (loading) return <div className="auth-screen"><div className="brand"><div className="brand-mark"><Zap size={18} fill="currentColor" /></div><span>LEVEL <b>UP</b></span></div><p>Carregando seu nível...</p></div>;
+  if (!isAuthenticated) return <div className="auth-screen"><div className="brand"><div className="brand-mark"><Zap size={18} fill="currentColor" /></div><span>LEVEL <b>UP</b></span></div><h1>Your life. Your level. Your evolution.</h1><p>Entre para salvar suas missões, XP, streak e evolução em todos os dispositivos.</p><button className="primary-button" onClick={() => startLogin()}>Entrar com Manus <ArrowUpRight size={16} /></button></div>;
 
   return (
     <div className="app-shell">
       <aside className={`sidebar ${showMenu ? "open" : ""}`}>
         <div className="brand"><div className="brand-mark"><Zap size={18} fill="currentColor" /></div><span>LEVEL <b>UP</b></span></div>
-        <div className="profile-mini"><div className="avatar">PH</div><div><strong>Pedro Henrique</strong><span>Nível 12 · Explorador</span></div><MoreHorizontal size={17} /></div>
+        <div className="profile-mini"><div className="avatar">{(user?.name ?? "LU").slice(0, 2).toUpperCase()}</div><div><strong>{user?.name ?? "Explorador"}</strong><span>Nível {Math.max(1, Math.floor(Math.sqrt(xp / 100)))} · Explorador</span></div><MoreHorizontal size={17} /></div>
         <p className="eyebrow nav-eyebrow">Workspace</p>
         <nav>{navItems.map(({ label, icon: Icon }) => <button key={label} className={active === label ? "nav-item active" : "nav-item"} onClick={() => { setActive(label); setShowMenu(false); }}><Icon size={18} /><span>{label}</span>{label === "Missões" && <em>{missions.filter((m) => !m.completed).length}</em>}</button>)}</nav>
         <div className="sidebar-bottom"><button className="nav-item"><Trophy size={18} /><span>Recompensas</span></button><button className="nav-item"><UserRound size={18} /><span>Perfil</span></button><div className="ai-mini"><div className="ai-orb"><Sparkles size={16} /></div><div><strong>LEVEL AI</strong><span>Seu copiloto pessoal</span></div><ArrowUpRight size={16} /></div></div>
       </aside>
 
       <main className="main-content">
-        <header className="topbar"><button className="mobile-menu" onClick={() => setShowMenu(!showMenu)} aria-label="Abrir menu">{showMenu ? <X /> : <Menu />}</button><div className="breadcrumb"><span>Workspace</span><ChevronRight size={14} /><strong>{active}</strong></div><div className="top-actions"><button className="icon-button" aria-label="Ajuda"><CircleHelp size={18} /></button><button className="icon-button" aria-label="Modo escuro"><Moon size={18} /></button><div className="top-avatar">PH</div></div></header>
+        <header className="topbar"><button className="mobile-menu" onClick={() => setShowMenu(!showMenu)} aria-label="Abrir menu">{showMenu ? <X /> : <Menu />}</button><div className="breadcrumb"><span>Workspace</span><ChevronRight size={14} /><strong>{active}</strong></div><div className="top-actions"><button className="icon-button" aria-label="Ajuda"><CircleHelp size={18} /></button><button className="icon-button" aria-label="Modo escuro"><Moon size={18} /></button><div className="top-avatar">{(user?.name ?? "LU").slice(0, 2).toUpperCase()}</div></div></header>
 
         <div className="page-wrap">
-          <section className="welcome-row"><div><p className="eyebrow">DOMINGO, 22 NOV 2026</p><h1>Bom dia, Pedro <span>✦</span></h1><p className="subhead">Seu próximo nível começa com o próximo check.</p></div><button className="primary-button" onClick={() => { setActive("Missões"); document.getElementById("missions")?.scrollIntoView({ behavior: "smooth" }); }}><Plus size={18} /> Adicionar atividade</button></section>
+          <section className="welcome-row"><div><p className="eyebrow">DOMINGO, 22 NOV 2026</p><h1>Bom dia, {(user?.name ?? "explorador").split(" ")[0]} <span>✦</span></h1><p className="subhead">Seu próximo nível começa com o próximo check.</p></div><button className="primary-button" onClick={() => { setActive("Missões"); document.getElementById("missions")?.scrollIntoView({ behavior: "smooth" }); }}><Plus size={18} /> Adicionar atividade</button></section>
 
           <section className="hero-grid">
             <div className="level-card card"><div className="level-copy"><div className="section-label"><span className="pulse-dot" /> PROGRESSO GERAL</div><div className="level-number"><strong>12</strong><span>NÍVEL<br />ATUAL</span></div><p>Você está a <b>260 XP</b> do nível 13.</p><ProgressBar value={xpProgress} /><div className="xp-label"><span>{xp.toLocaleString("pt-BR")} XP</span><span>1.500 XP</span></div></div><div className="level-ring"><div className="ring-glow" /><div className="ring-content"><Zap size={22} fill="currentColor" /><span>LEVEL</span></div></div></div>
